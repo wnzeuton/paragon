@@ -76,11 +76,13 @@ _STOPWORDS = {
 # Attribute-extraction patterns — run on the RAW (original case) description.
 # ---------------------------------------------------------------------------
 
-# Thread: metric M8, M8-1.25 | imperial 3/8-16 | numbered #10-24
+# Thread: metric M8, M8-1.25 | imperial 3/8-16 | numbered #10-24 | bare fraction 1/2
+# Bare fraction (\d+/\d+) is last so fully-specified 3/8-16 takes priority.
 _THREAD_PAT = re.compile(
     r'(M\d+(?:-\d+(?:\.\d+)?)?)'   # M8 or M8-1.25
     r'|(\d+/\d+-\d+)'               # 3/8-16
-    r'|(#\d+-\d+)',                  # #10-24
+    r'|(#\d+-\d+)'                  # #10-24
+    r'|(\d+/\d+)',                   # 1/2 (bare fraction, pitch implied)
     re.IGNORECASE,
 )
 
@@ -165,10 +167,12 @@ def normalize(text: str) -> str:
     # Remove characters that aren't alphanumeric, space, or fastener-relevant punctuation
     text = re.sub(r'[^\w\s\-/#.]', ' ', text)
 
-    # Token-level substitutions
+    # Token-level substitutions; drop stopwords
     tokens = text.split()
     expanded = []
     for tok in tokens:
+        if tok in _STOPWORDS:
+            continue
         if _NUMERIC_PAT.match(tok) or _THREAD_TOKEN_PAT.match(tok):
             expanded.append(tok)
         else:
