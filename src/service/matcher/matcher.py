@@ -151,7 +151,7 @@ class CatalogMatcher:
         # --- Semantic retrieval (top-20 candidates) ---
         q_vec = self._model.encode([query_norm], normalize_embeddings=True)
         sem_all = (q_vec @ self._embeddings.T).flatten()
-        candidate_size = min(20, len(self._catalog))
+        candidate_size = min(50, len(self._catalog))
         top_idx = np.argsort(sem_all)[::-1][:candidate_size]
 
         # --- Lexical signal (char n-gram TF-IDF) ---
