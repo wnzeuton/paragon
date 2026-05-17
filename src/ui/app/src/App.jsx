@@ -1,116 +1,149 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 
-const CONF_GREEN  = '#16a34a'
-const CONF_AMBER  = '#d97706'
-const CONF_RED    = '#dc2626'
-const CONF_BG_GREEN = '#f0fdf4'
-const CONF_BG_AMBER = '#fffbeb'
-const CONF_BG_RED   = '#fef2f2'
+const SANS = "'Geist', sans-serif"
+const MONO = "'IBM Plex Mono', monospace"
 
-function confidenceColor(score) {
-  if (score >= 0.7) return { text: CONF_GREEN, bg: CONF_BG_GREEN }
-  if (score >= 0.4) return { text: CONF_AMBER, bg: CONF_BG_AMBER }
-  return { text: CONF_RED, bg: CONF_BG_RED }
+function scoreColor(score) {
+  if (score >= 0.7) return '#4ade80'
+  if (score >= 0.4) return '#facc15'
+  return '#f87171'
 }
 
-function BreakdownBar({ label, value }) {
-  const pct = Math.round(value * 100)
+function BreakdownPanel({ breakdown }) {
+  const rows = [
+    { label: 'semantic',  value: breakdown.semantic },
+    { label: 'lexical',   value: breakdown.lexical },
+    { label: 'attribute', value: breakdown.attribute },
+  ]
   return (
-    <div style={{ marginBottom: 4 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#6b7280', marginBottom: 2 }}>
-        <span>{label}</span>
-        <span>{pct}%</span>
-      </div>
-      <div style={{ background: '#e5e7eb', borderRadius: 3, height: 5 }}>
-        <div style={{ width: `${pct}%`, background: '#6366f1', borderRadius: 3, height: 5, transition: 'width 0.3s' }} />
-      </div>
+    <div style={{ borderTop: '1px solid #1e1e2a', paddingTop: 14, marginTop: 12 }}>
+      {rows.map(({ label, value }, i) => (
+        <div key={label} style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          marginBottom: i < rows.length - 1 ? 8 : 0,
+        }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: '#3a3a5a', width: 70, flexShrink: 0 }}>
+            {label}
+          </span>
+          <div style={{ flex: 1, height: 3, background: '#1e1e2a', borderRadius: 2 }}>
+            <div style={{
+              width: `${Math.round(value * 100)}%`,
+              height: '100%',
+              background: 'rgba(91, 91, 246, 0.7)',
+              borderRadius: 2,
+            }} />
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: '#4a4a6a', width: 32, textAlign: 'right', flexShrink: 0 }}>
+            {Math.round(value * 100)}%
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
 
-function ResultCard({ result, rank }) {
-  const [open, setOpen] = useState(false)
-  const { text: cText, bg: cBg } = confidenceColor(result.score)
-  const pct = Math.round(result.score * 100)
+function ResultCard({ result, rank, isFirst }) {
+  const [open, setOpen]       = useState(false)
+  const [hovered, setHovered] = useState(false)
+
+  const pct   = Math.round(result.score * 100)
+  const color = scoreColor(result.score)
 
   return (
-    <div style={{
-      border: '1px solid #e5e7eb',
-      borderRadius: 10,
-      padding: '16px 18px',
-      marginBottom: 12,
-      background: '#fff',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ flex: 1 }}>
-          <span style={{ fontSize: 11, color: '#9ca3af', marginRight: 6 }}>#{rank}</span>
-          <span style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>{result.title}</span>
+    <div
+      onClick={() => setOpen(o => !o)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background:   isFirst ? '#14141f' : '#13131a',
+        border:       `1px solid ${hovered ? '#2e2e42' : isFirst ? '#2a2a4a' : '#1e1e2a'}`,
+        borderRadius: 12,
+        padding:      '20px 22px',
+        cursor:       'pointer',
+        transition:   'border-color 0.15s',
+      }}
+    >
+      {/* Header row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#3a3a4a', paddingTop: 3, flexShrink: 0 }}>
+            {String(rank).padStart(2, '0')}
+          </span>
+          <span style={{ fontFamily: SANS, fontSize: 15, fontWeight: 600, color: '#e8e8f5', lineHeight: 1.3 }}>
+            {result.title}
+          </span>
         </div>
-        <div style={{
-          flexShrink: 0,
-          background: cBg,
-          color: cText,
-          fontWeight: 700,
-          fontSize: 15,
-          padding: '4px 10px',
-          borderRadius: 20,
-          border: `1px solid ${cText}33`,
-        }}>
-          {pct}%
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0, marginLeft: 16 }}>
+          <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 500, color }}>
+            {pct}%
+          </span>
+          <div style={{ width: 48, height: 3, background: '#1e1e2a', borderRadius: 2 }}>
+            <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 2 }} />
+          </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280', fontFamily: 'monospace' }}>
+      {/* SKU */}
+      <div style={{ fontFamily: MONO, fontSize: 11, color: '#3a3a4a', letterSpacing: '0.05em', marginTop: 10 }}>
         {result.sku}
       </div>
 
+      {/* Tags */}
       {result.highlights.length > 0 && (
-        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           {result.highlights.map(h => (
             <span key={h} style={{
-              background: '#f3f4f6', color: '#374151',
-              fontSize: 11, padding: '2px 6px', borderRadius: 4,
-            }}>{h}</span>
+              fontFamily: MONO, fontSize: 11,
+              background: '#1a1a26', border: '1px solid #2a2a3a',
+              color: '#7070a0', borderRadius: 5, padding: '3px 8px',
+            }}>
+              {h}
+            </span>
           ))}
         </div>
       )}
 
+      {/* Warnings */}
       {result.notes.length > 0 && (
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {result.notes.map((n, i) => (
-            <div key={i} style={{ fontSize: 11, color: '#92400e', fontStyle: 'italic' }}>⚠ {n}</div>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, color: '#a07030' }}>
+              <span>⚠</span><span>{n}</span>
+            </div>
           ))}
         </div>
       )}
 
+      {/* Breakdown toggle */}
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
+        onMouseEnter={e => e.currentTarget.style.color = '#6060a0'}
+        onMouseLeave={e => e.currentTarget.style.color = '#3a3a5a'}
         style={{
-          marginTop: 10, fontSize: 11, color: '#6366f1', background: 'none',
-          border: 'none', cursor: 'pointer', padding: 0,
+          marginTop: 12, fontFamily: MONO, fontSize: 11, color: '#3a3a5a',
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          transition: 'color 0.15s',
         }}
       >
-        {open ? '▲ Hide breakdown' : '▼ Show breakdown'}
+        breakdown{' '}
+        <span style={{
+          display: 'inline-block',
+          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s',
+        }}>▾</span>
       </button>
 
-      {open && (
-        <div style={{ marginTop: 8, padding: '10px 12px', background: '#f9fafb', borderRadius: 6 }}>
-          <BreakdownBar label="Semantic"  value={result.breakdown.semantic} />
-          <BreakdownBar label="Lexical"   value={result.breakdown.lexical} />
-          <BreakdownBar label="Attribute" value={result.breakdown.attribute} />
-        </div>
-      )}
+      {open && <BreakdownPanel breakdown={result.breakdown} />}
     </div>
   )
 }
 
 export default function App() {
-  const [query, setQuery]     = useState('')
+  const [query,   setQuery]   = useState('')
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
-  const inputRef = useRef(null)
+  const [error,   setError]   = useState(null)
+  const [btnDown, setBtnDown] = useState(false)
 
   async function handleSearch(e) {
     e.preventDefault()
@@ -122,8 +155,7 @@ export default function App() {
     try {
       const res = await fetch(`/search?q=${encodeURIComponent(q)}&n=3`)
       if (!res.ok) throw new Error(`Server error ${res.status}`)
-      const data = await res.json()
-      setResults(data)
+      setResults(await res.json())
     } catch (err) {
       setError(err.message)
     } finally {
@@ -134,65 +166,90 @@ export default function App() {
   const lowConfidence = results && results.length > 0 && results[0].score < 0.4
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 20px' }}>
+    <div style={{ minHeight: '100vh', background: '#0d0d0f', fontFamily: SANS }}>
+      <div style={{ maxWidth: 700, margin: '0 auto', borderRadius: 16, padding: '48px 40px 60px' }}>
 
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111827', margin: 0 }}>Catalog Match</h1>
-          <p style={{ color: '#6b7280', marginTop: 6, fontSize: 14 }}>
-            Describe what you need — we'll find the closest catalog items.
-          </p>
+        {/* Header */}
+        <div style={{ marginBottom: 36 }}>
+          <div style={{ fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#4a4a5a', marginBottom: 6 }}>
+            PARAGON
+          </div>
+          <div style={{ fontFamily: SANS, fontSize: 28, fontWeight: 700, color: '#f0f0f5' }}>
+            Catalog Match
+          </div>
         </div>
 
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        {/* Search row */}
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 32 }}>
           <input
-            ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder='e.g. "SHCS M8 x 30mm zinc" or "3/8 hex nut stainless"'
+            placeholder='e.g. "SHCS M8 x 30mm zinc"'
             style={{
-              flex: 1, padding: '10px 14px', fontSize: 14, border: '1px solid #d1d5db',
-              borderRadius: 8, outline: 'none',
+              flex: 1, background: '#16161c', border: '1px solid #2a2a38',
+              borderRadius: 10, padding: '14px 18px', fontSize: 15,
+              fontFamily: MONO, color: '#e0e0ec', outline: 'none', transition: 'border-color 0.15s',
             }}
-            onFocus={e => { e.target.style.borderColor = '#6366f1' }}
-            onBlur={e  => { e.target.style.borderColor = '#d1d5db' }}
+            onFocus={e => e.target.style.borderColor = '#5b5bf6'}
+            onBlur={e  => e.target.style.borderColor = '#2a2a38'}
           />
           <button
             type="submit"
             disabled={loading}
+            onMouseDown={() => setBtnDown(true)}
+            onMouseUp={() => setBtnDown(false)}
+            onMouseLeave={() => setBtnDown(false)}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#4545e0' }}
             style={{
-              padding: '10px 20px', background: loading ? '#a5b4fc' : '#6366f1',
-              color: '#fff', border: 'none', borderRadius: 8,
-              fontSize: 14, fontWeight: 600, cursor: loading ? 'default' : 'pointer',
+              background: '#5b5bf6', border: 'none', borderRadius: 10,
+              padding: '14px 24px', fontFamily: SANS, fontSize: 14, fontWeight: 600,
+              color: '#fff', cursor: loading ? 'default' : 'pointer',
+              transform: btnDown ? 'scale(0.98)' : 'scale(1)',
+              transition: 'transform 0.1s, background 0.15s',
+              opacity: loading ? 0.6 : 1,
             }}
           >
             {loading ? 'Searching…' : 'Search'}
           </button>
         </form>
 
+        {/* Error */}
         {error && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#b91c1c', fontSize: 13 }}>
-            {error}
+          <div style={{ fontFamily: MONO, fontSize: 12, color: '#f87171', marginBottom: 16 }}>
+            ⚠ {error}
           </div>
         )}
 
+        {/* Low confidence banner */}
         {lowConfidence && (
-          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#92400e', fontSize: 13 }}>
-            <strong>Low confidence</strong> — try adding thread size, material, or finish.
-            <br />
-            <span style={{ color: '#78350f' }}>Example: <em>"M8 socket head cap screw steel zinc 30mm"</em></span>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: '#a07030', marginBottom: 16 }}>
+            ⚠ Low confidence — try adding thread size, material, or finish.
           </div>
+        )}
+
+        {/* Results */}
+        {results && results.length > 0 && (
+          <>
+            <div style={{
+              fontFamily: SANS, fontSize: 10, fontWeight: 600,
+              letterSpacing: '0.18em', textTransform: 'uppercase',
+              color: '#3a3a4a', marginBottom: 14,
+            }}>
+              TOP MATCHES
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {results.map((r, i) => (
+                <ResultCard key={r.id + i} result={r} rank={i + 1} isFirst={i === 0} />
+              ))}
+            </div>
+          </>
         )}
 
         {results && results.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#6b7280', padding: '40px 0' }}>
-            No results — catalog may not be loaded yet.
+          <div style={{ fontFamily: MONO, fontSize: 12, color: '#3a3a4a', textAlign: 'center', padding: '40px 0' }}>
+            No results — catalog may not be loaded.
           </div>
         )}
-
-        {results && results.map((r, i) => (
-          <ResultCard key={r.id + i} result={r} rank={i + 1} />
-        ))}
 
       </div>
     </div>
