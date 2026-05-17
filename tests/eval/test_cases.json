@@ -1,0 +1,30 @@
+[
+  {
+    "query": "M8 flat washer",
+    "expected_ids": ["CAT-0009", "CAT-0016", "CAT-0085", "CAT-0440", "CAT-0688"]
+  },
+  {
+    "query": "5/16 hex nut",
+    "expected_ids": ["CAT-0073", "CAT-0430", "CAT-0672", "CAT-0742", "CAT-0853"]
+  },
+  {
+    "query": "1/2 inch hex nut",
+    "expected_ids": ["CAT-0038", "CAT-0107", "CAT-0394", "CAT-0459", "CAT-0768"]
+  },
+  {
+    "query": "M6 hex nuts",
+    "expected_ids": ["CAT-0165", "CAT-0196", "CAT-0250", "CAT-0329", "CAT-0897"]
+  },
+  {
+    "query": "SHCS 7/16 x 2-1/2",
+    "expected_ids": ["CAT-0122", "CAT-0375"]
+  },
+  {
+    "query": "1/2 rod 6 foot",
+    "expected_ids": ["CAT-0002"]
+  },
+  {
+    "query": "HHB 3/4-10 x 5/8",
+    "expected_ids": ["CAT-0236", "CAT-0155"]
+  }
+]
