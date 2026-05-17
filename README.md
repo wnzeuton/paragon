@@ -39,9 +39,15 @@ Multi-token abbreviations are expanded first using regex patterns applied to the
 
 Single-token abbreviations that weren't caught by phrase-level substitution are swapped out via a dictionary lookup after splitting on whitespace. Numeric tokens and thread sizes (e.g. `M8`, `3/8-16`) are explicitly skipped to avoid corrupting specs.
 
-**(3) Attribute extraction**
+**(3) Stopword removal — including dimensional English words**
+
+Standard stopwords (`a`, `the`, `for`, etc.) are stripped from both query and catalog text before embedding. This also includes domain-specific noise words like `"inch"` and `"inches"` — natural language that customers use but that never appears in catalog descriptions. Without this, a query like `"1/2 inch hex nut"` embeds differently from `"1/2-13 HEX NUT"` even though they mean the same thing, because `"inch"` shifts the embedding vector away from the catalog's numeric conventions. Removing it from the stopword list rather than the abbreviation map is intentional: it's not an abbreviation to expand, it's vocabulary to discard.
+
+**(4) Attribute extraction**
 
 Structured attributes — thread size, length, fastener type, material, finish — are extracted from the *original, un-normalized* text using regex patterns ordered longest-match-first. Running on raw text rather than normalized text avoids casing issues with metric thread sizes (`M8`) and means the patterns can handle abbreviated forms directly.
+
+Thread size matching handles underspecified queries: a bare fraction like `"1/2"` (no pitch) is extracted as a partial thread size and prefix-matched against `"1/2-13"` in the catalog. This reflects how buyers actually talk — they often drop the pitch when it's implied by context.
 
 If the query doesn't specify an attribute, that attribute contributes nothing to the score in either direction — it doesn't penalize catalog items that do have that attribute. Attributes are only used as a signal when the query explicitly mentions them.
 
@@ -53,11 +59,11 @@ If the query doesn't specify an attribute, that attribute contributes nothing to
 
 **(1) Semantic shortlist**
 
-Embedding similarity narrows the full catalog down to the top 20 candidates. This is the coarse retrieval step.
+Embedding similarity narrows the full catalog down to the top 50 candidates. This is the coarse retrieval step. 50 was chosen because a shortlist of 20 cut off correct matches that ranked just outside it — highly specific queries (e.g. a particular thread size and length combination) compete against many semantically similar items, and the right answer can fall at rank 25+ before attribute reranking gets a chance to promote it.
 
 **(2) Rerank**
 
-Lexical and attribute scoring run only over those 20 candidates to produce the final ranking.
+Lexical and attribute scoring run only over those 50 candidates to produce the final ranking.
 
 At ~1k items the two-stage approach doesn't make a measurable difference in speed, but the pattern scales — if the catalog grew to hundreds of thousands of items, running attribute extraction and TF-IDF over everything on every query would be expensive. Semantic search is cheap to run at scale.
 
@@ -102,21 +108,69 @@ Confidence is most meaningful as a relative signal. The gap between the top resu
 
 ## Testing
 
-```bash
-# Unit tests (no catalog required)
-pytest tests/unit/
+### Unit tests
 
-# Accuracy evaluation (requires catalog)
-python tests/eval/eval.py
+```bash
+pytest tests/unit/
 ```
+
+No catalog file required — tests run against a small inline fixture of 3 items written to a temp directory. Two test modules:
+
+- `test_preprocessing.py` — verifies normalization and attribute extraction in isolation: acronym expansion (`SHCS`, `HHB`, `HDG`), finish abbreviations, thread/length/material parsing, and stopword removal. These tests don't touch the matcher or the embedding model.
+- `test_matcher.py` — verifies matcher behavior: inactive items are excluded from the index, scores are in [0, 1], the breakdown dict has all three signal keys, and an exact-description query ranks the correct item first.
+
+Unit tests are designed to be fast and dependency-light. They catch regressions in the preprocessing logic and matcher contract without needing a GPU or the full catalog.
+
+### Accuracy evaluation
+
+```bash
+python tests/eval/eval.py [--catalog data/catalog.csv] [--cases tests/eval/test_cases.json]
+```
+
+Runs a labeled test suite against the full catalog and reports three metrics:
+
+- **MRR (Mean Reciprocal Rank)** — average of `1/rank` for the first correct result across all queries. A query where the correct item is rank 1 scores 1.0; rank 2 scores 0.5; not found scores 0. Sensitive to whether the best answer is at the top.
+- **P@1** — fraction of queries where a correct item appears at rank 1.
+- **P@3** — fraction of queries where a correct item appears anywhere in the top 3.
+
+Each test case in `test_cases.json` maps a free-form query to a set of acceptable catalog IDs (multiple valid matches are supported). The eval also reports the score of the first correct hit across all queries — useful for calibrating the confidence thresholds.
 
 ---
 
 ## API
 
+The backend is a FastAPI service. The catalog is loaded once at startup into memory; catalog changes require a restart.
+
+### `GET /search`
+
+Returns the top-n matching catalog items for a free-form query.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `q` | string | required | Free-form product description |
+| `n` | integer | 3 | Number of results to return (1–10) |
+
+**Response** — array of result objects:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Catalog ID (e.g. `CAT-0038`) |
+| `sku` | string | SKU code |
+| `title` | string | Raw catalog description |
+| `score` | float | Combined match score, 0–1 |
+| `breakdown` | object | Per-signal scores: `semantic`, `lexical`, `attribute` (each 0–1) |
+| `highlights` | array | Query tokens that appear verbatim in the catalog description |
+| `notes` | array | Human-readable attribute mismatch or absence notes (e.g. `"Material mismatch: query has 'stainless steel', item has 'brass'"`) |
+
+**Example:**
 ```
-GET /search?q=<query>&n=3
-GET /health
+GET /search?q=SHCS+M8+zinc&n=3
 ```
 
-Response fields: `id`, `sku`, `title`, `score`, `breakdown` (semantic/lexical/attribute), `highlights`, `notes`.
+### `GET /health`
+
+Returns server status and the number of active items currently indexed.
+
+```json
+{ "status": "ok", "catalog_size": 916 }
+```
