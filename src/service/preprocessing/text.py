@@ -68,6 +68,8 @@ _TOKEN_SUBS = {
 _STOPWORDS = {
     'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to',
     'for', 'of', 'with', 'is', 'it', 'its', 'by', 'as', 'be', 'are',
+    # dimensional words customers use that never appear in catalog descriptions
+    'inch', 'inches',
 }
 
 # ---------------------------------------------------------------------------
