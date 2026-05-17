@@ -2,6 +2,16 @@
 
 Maps a free-form product description to the top-3 items in a fastener catalog.
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python, FastAPI |
+| Semantic search | `all-MiniLM-L6-v2` via SentenceTransformers |
+| Lexical search | Char n-gram TF-IDF via scikit-learn |
+| Frontend | React, Vite |
+| Testing | pytest |
+
 ## Quick Start
 
 ```bash
