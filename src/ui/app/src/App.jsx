@@ -187,7 +187,7 @@ export default function App() {
             placeholder='e.g. "SHCS M8 x 30mm zinc"'
             style={{
               flex: 1, background: '#16161c', border: '1px solid #2a2a38',
-              borderRadius: 10, padding: '14px 18px', fontSize: 15,
+              borderRadius: 10, padding: '10px 18px', fontSize: 15,
               fontFamily: MONO, color: '#e0e0ec', outline: 'none', transition: 'border-color 0.15s',
             }}
             onFocus={e => e.target.style.borderColor = '#5b5bf6'}
@@ -199,14 +199,15 @@ export default function App() {
             onMouseDown={() => setBtnDown(true)}
             onMouseUp={() => setBtnDown(false)}
             onMouseLeave={() => setBtnDown(false)}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#4545e0' }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#1e1e2e' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#16161c' }}
             style={{
-              background: '#5b5bf6', border: 'none', borderRadius: 10,
-              padding: '14px 24px', fontFamily: SANS, fontSize: 14, fontWeight: 600,
-              color: '#fff', cursor: loading ? 'default' : 'pointer',
+              background: '#16161c', border: '1px solid #2a2a38', borderRadius: 10,
+              padding: '10px 28px', fontFamily: SANS, fontSize: 14, fontWeight: 600,
+              color: '#7070c0', cursor: loading ? 'default' : 'pointer',
               transform: btnDown ? 'scale(0.98)' : 'scale(1)',
               transition: 'transform 0.1s, background 0.15s',
-              opacity: loading ? 0.6 : 1,
+              opacity: loading ? 0.6 : 1, letterSpacing: '0.06em',
             }}
           >
             {loading ? 'Searching…' : 'Search'}
