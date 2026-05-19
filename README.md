@@ -24,7 +24,7 @@ pip install -r requirements.txt
 # 3. Place your catalog CSV at data/catalog.csv
 
 # 4. Start the backend (from repo root)
-CATALOG_PATH=data/catalog.csv uvicorn src.service.api.app:app --reload
+uvicorn src.service.api.app:app --reload
 
 # 5. In a separate terminal, start the frontend
 cd src/ui/app
