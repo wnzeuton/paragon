@@ -6,6 +6,8 @@ import unicodedata
 # Handles multi-token catalog abbreviations and common customer acronyms.
 # ---------------------------------------------------------------------------
 _PHRASE_SUBS = [
+    # Strip "in"/"inch" unit suffix directly attached to a number (e.g. "5/8in" → "5/8")
+    (r'(\d)(?:in|inch)\b',           r'\1'),
     # Material grades — most specific first so "18-8 ss" isn't caught by generic "ss"
     (r'\b18-8\s+ss\b',               'eighteen eight stainless steel'),
     (r'\b316\s+ss\b',                '316 stainless steel'),

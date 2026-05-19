@@ -65,6 +65,14 @@ def test_extract_hdg_finish():
     assert attrs['finish'] == 'hot dip galvanized'
 
 
+def test_normalize_strips_inch_unit_suffix():
+    # "5/8in" and "5/8" should normalize identically
+    assert normalize('5/8in') == normalize('5/8')
+    assert normalize('1/2in') == normalize('1/2')
+    assert normalize('3in') == normalize('3')
+    assert normalize('5/8inch') == normalize('5/8')
+
+
 def test_tokenize_drops_stopwords():
     tokens = tokenize('a hex cap screw in the catalog')
     assert 'a' not in tokens
